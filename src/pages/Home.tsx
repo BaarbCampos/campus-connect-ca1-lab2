@@ -10,107 +10,116 @@ import {
   IonCardTitle,
   IonCardContent,
   IonButton,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonBadge
+  IonBadge,
+  IonInput
 } from '@ionic/react';
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const events = [
+  { id: 1, title: 'Coding Workshop', location: 'IT Lab', time: '10:00 AM', category: 'Technology' },
+  { id: 2, title: 'Football Match', location: 'Sports Ground', time: '2:00 PM', category: 'Sports' },
+  { id: 3, title: 'Campus Coffee Meetup', location: 'Student Cafe', time: '11:30 AM', category: 'Social' },
+  { id: 4, title: 'Creative Art Workshop', location: 'Art Room', time: '3:00 PM', category: 'Creative' }
+];
 
 const Home: React.FC = () => {
-  const [count, setCount] = useState(0);
-  const [message, setMessage] = useState('Ready to study');
-  const [showTip, setShowTip] = useState(false);
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [search, setSearch] = useState('');
+
+  const [joinedIds, setJoinedIds] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('joinedEventIds');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
-    console.log('Student App loaded');
-  }, []);
+    localStorage.setItem('joinedEventIds', JSON.stringify(joinedIds));
+  }, [joinedIds]);
 
-  useEffect(() => {
-    console.log('Study sessions:', count);
-  }, [count]);
+  const toggleJoin = (id: number) => {
+    if (joinedIds.includes(id)) {
+      setJoinedIds(joinedIds.filter((eventId) => eventId !== id));
+    } else {
+      setJoinedIds([...joinedIds, id]);
+    }
+  };
+
+  const filteredEvents = events.filter((event) =>
+    event.title.toLowerCase().includes(search.trim().toLowerCase())
+  );
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>My Student App</IonTitle>
+          <IonTitle>Campus Connect</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <h1>Welcome</h1>
+        <h1>Campus Events</h1>
+        <p>Discover activities and meet other students.</p>
 
-        <p>Welcome to my first Ionic application.</p>
+        <IonInput
+          label="Your name"
+          labelPlacement="stacked"
+          value={name}
+          placeholder="Enter your name"
+          onIonInput={(event) => setName(event.detail.value ?? '')}
+        />
 
-        <p>{message}</p>
+        {name.trim() !== '' && <p>Hello, {name}!</p>}
 
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>My Studies</IonCardTitle>
-          </IonCardHeader>
+        <h2>Upcoming Events</h2>
 
-          <IonCardContent>
-           <IonButton onClick={() => setMessage('Your study session has started!')}>
-               Start Studying
-          </IonButton>
-          </IonCardContent>
-        </IonCard>
+        <IonInput
+          label="Search events"
+          labelPlacement="stacked"
+          value={search}
+          placeholder="Search by event title"
+          onIonInput={(event) => setSearch(event.detail.value ?? '')}
+        />
 
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>Study Tracker</IonCardTitle>
-          </IonCardHeader>
+        <p>
+          Joined events: <IonBadge>{joinedIds.length}</IonBadge>
+        </p>
 
-          <IonCardContent>
-            <p>
-              Study Sessions: <IonBadge>{count}</IonBadge>
-            </p>
+        {filteredEvents.length === 0 && (
+          <p>No events found. Try another search.</p>
+        )}
 
-            <IonButton onClick={() => setCount(count + 1)}>
-              Add Session
-            </IonButton>
+        {filteredEvents.map((event) => (
+          <IonCard key={event.id}>
+            <IonCardHeader>
+              <IonCardTitle>{event.title}</IonCardTitle>
+            </IonCardHeader>
 
-            <IonButton
-              fill="outline"
-              onClick={() => {
-                setCount(0);
-                setMessage('Ready to study');
-              }}
-            >
-              Reset
-            </IonButton>
+            <IonCardContent>
+              <p>Location: {event.location}</p>
+              <p>Time: {event.time}</p>
+              <p>
+                Category: <IonBadge>{event.category}</IonBadge>
+              </p>
 
-            <IonButton onClick={() => setMessage('You can do it! Keep learning!')}>
-              Motivate Me
-            </IonButton>
+              <IonButton
+                color={joinedIds.includes(event.id) ? 'medium' : 'primary'}
+                onClick={() => toggleJoin(event.id)}
+              >
+                {joinedIds.includes(event.id) ? 'Leave' : 'Join'}
+              </IonButton>
 
-            <IonList>
-              <IonItem>
-                <IonLabel>Mobile Development</IonLabel>
-              </IonItem>
-
-              <IonItem>
-                <IonLabel>Web Development</IonLabel>
-              </IonItem>
-
-              <IonItem>
-                <IonLabel>Database Systems</IonLabel>
-              </IonItem>
-            </IonList>
-
-            <IonButton onClick={() => setShowTip(!showTip)}>
-              Show / Hide Study Tip
-            </IonButton>
-
-            {showTip && (
-              <p>Study for 25 minutes and then take a short break.</p>
-            )}
-
-            {count > 3 && <p>Excellent progress!</p>}
-          </IonCardContent>
-        </IonCard>
+              <IonButton onClick={() => navigate(`/event/${event.id}`)}>
+                View Details
+              </IonButton>
+            </IonCardContent>
+          </IonCard>
+        ))}
       </IonContent>
     </IonPage>
   );
